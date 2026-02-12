@@ -64,7 +64,6 @@ interface DesignState {
 	labelVg: number;
 	fields: LabelField[];
 	selectedFieldId: string | null;
-	fieldIdCounter: number;
 	canvasScale: number;
 }
 
@@ -87,7 +86,6 @@ const design = $state<DesignState>({
 
 	fields: [],
 	selectedFieldId: null,
-	fieldIdCounter: 0,
 
 	canvasScale: DEFAULT_SCALE
 });
@@ -137,7 +135,7 @@ export function markLabelCustom() {
 }
 
 export function addField(type: FieldType, column: string | null): LabelField {
-	const id = `field_${design.fieldIdCounter++}`;
+	const id = crypto.randomUUID();
 	const labelW = design.labelW * PPMM;
 	const labelH = design.labelH * PPMM;
 
@@ -194,7 +192,7 @@ export function addField(type: FieldType, column: string | null): LabelField {
 		};
 	}
 
-	design.fields.push(field);
+	design.fields = [...design.fields, field];
 	design.selectedFieldId = id;
 	return field;
 }
@@ -209,13 +207,10 @@ export function getSelectedField(): LabelField | null {
 }
 
 export function deleteField(id: string) {
-	const idx = design.fields.findIndex((f) => f.id === id);
-	if (idx >= 0) {
-		design.fields.splice(idx, 1);
-		if (design.selectedFieldId === id) {
-			design.selectedFieldId = null;
-		}
+	if (design.selectedFieldId === id) {
+		design.selectedFieldId = null;
 	}
+	design.fields = design.fields.filter((f) => f.id !== id);
 }
 
 export function deleteSelected() {

@@ -12,13 +12,41 @@
 		zoomReset,
 		type LabelField
 	} from '$lib/stores/design.svelte';
+	import { saveTemplate, getActiveTemplateName } from '$lib/stores/templates.svelte';
 	import { getSpreadsheet } from '$lib/stores/spreadsheet.svelte';
 	import ZoomIn from '@lucide/svelte/icons/zoom-in';
 	import ZoomOut from '@lucide/svelte/icons/zoom-out';
 	import Maximize from '@lucide/svelte/icons/maximize';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
+	import Save from '@lucide/svelte/icons/save';
+	import * as Dialog from '$lib/components/ui/dialog';
     import { cn } from 'tailwind-variants';
+
+	let dialogOpen = $state(false);
+	let templateName = $state('');
+	let isUpdate = $state(false);
+
+	$effect(() => {
+		if (dialogOpen) {
+			isUpdate = getActiveTemplateName() !== null && templateName.trim() === getActiveTemplateName();
+		}
+	});
+
+	function openSaveDialog() {
+		templateName = getActiveTemplateName() ?? '';
+		dialogOpen = true;
+	}
+
+	function handleSaveTemplate() {
+		const name = templateName.trim();
+		if (!name) {
+			return;
+		}
+
+		saveTemplate(name);
+		dialogOpen = false;
+	}
 
 	const design = getDesign();
 	const spreadsheet = getSpreadsheet();
@@ -188,6 +216,19 @@
 
 		<span class="mx-1 h-4 w-px bg-border"></span>
 
+		<Button
+			variant="ghost"
+			size="sm"
+			class="h-7 gap-1.5 px-2 text-xs"
+			disabled={design.fields.length === 0}
+			onclick={openSaveDialog}
+		>
+			<Save class="size-3.5" />
+			Save Template
+		</Button>
+
+		<span class="mx-1 h-4 w-px bg-border"></span>
+
 		<Button size="sm" class="h-7 gap-1.5 px-3 text-xs" onclick={() => goto('/print')}>
 			Generate Labels
 			<ArrowRight class="size-3.5" />
@@ -263,4 +304,34 @@
 			{/each}
 		</div>
 	</div>
+
+	<Dialog.Root bind:open={dialogOpen}>
+		<Dialog.Content class="sm:max-w-md">
+			<Dialog.Header>
+				<Dialog.Title>{isUpdate ? 'Update Template' : 'Save Template'}</Dialog.Title>
+				<Dialog.Description>
+					{isUpdate
+						? 'Update the existing template with your current layout, or change the name to save as new.'
+						: 'Give your label layout a name so you can reuse it later with different data.'}
+				</Dialog.Description>
+			</Dialog.Header>
+
+			<input
+				type="text"
+				bind:value={templateName}
+				placeholder="e.g. Product Labels 2x10"
+				class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-ring"
+				onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSaveTemplate(); } }}
+			/>
+
+			<Dialog.Footer>
+				<Dialog.Close>
+					<Button variant="outline">Cancel</Button>
+				</Dialog.Close>
+				<Button disabled={!templateName.trim()} onclick={handleSaveTemplate}>
+					{isUpdate ? 'Update Template' : 'Save Template'}
+				</Button>
+			</Dialog.Footer>
+		</Dialog.Content>
+	</Dialog.Root>
 </div>
