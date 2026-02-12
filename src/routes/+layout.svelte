@@ -4,9 +4,13 @@
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
-    import { cn } from 'tailwind-variants';
+	import { cn } from 'tailwind-variants';
+	import { hasSpreadsheetData } from '$lib/stores/spreadsheet.svelte';
+	import { getDesign } from '$lib/stores/design.svelte';
 
 	let { children } = $props();
+
+	const design = getDesign();
 
 	const nav = [
 		{ label: 'Import', href: '/' },
@@ -18,8 +22,15 @@
 		if (href === '/') {
 			return page.url.pathname === '/';
 		}
-		
+
 		return page.url.pathname.startsWith(href);
+	}
+
+	function isReachable(href: string): boolean {
+		if (href === '/') return true;
+		if (href === '/design') return hasSpreadsheetData();
+		if (href === '/print') return design.fields.length > 0;
+		return true;
 	}
 </script>
 
@@ -38,20 +49,23 @@
 		<nav class="flex gap-0.5">
 			{#each nav as navItem, index}
 				{@const active = isActive(navItem.href)}
+				{@const reachable = isReachable(navItem.href)}
 
 				<Button
 					variant="ghost"
 					size="sm"
-					href={navItem.href}
+					href={reachable ? navItem.href : undefined}
+					disabled={!reachable}
 					class={cn("text-[12px] font-semibold uppercase tracking-wider", {
 						"bg-primary/15 text-primary hover:bg-primary/20 hover:text-primary": active,
-						"text-muted-foreground hover:text-foreground": !active
+						"text-muted-foreground hover:text-foreground": !active && reachable,
+						"text-muted-foreground/40 cursor-not-allowed": !reachable
 					})}
 				>
 					<span class="mr-1.5">{index + 1}</span>
 					{navItem.label}
 				</Button>
-			{/each}				
+			{/each}
 		</nav>
 	</header>
 
