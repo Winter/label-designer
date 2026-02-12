@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button';
-	import { getDesign, PPMM, type LabelField } from '$lib/stores/design.svelte';
+	import { getDesign, PPMM, formatSequenceValue, type LabelField } from '$lib/stores/design.svelte';
 	import { getSpreadsheet, hasSpreadsheetData } from '$lib/stores/spreadsheet.svelte';
 	import QRCode from 'qrcode';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
@@ -28,7 +28,7 @@
 
 	interface PageData {
 		pageIndex: number;
-		labels: { row: Record<string, string>; col: number; r: number }[];
+		labels: { row: Record<string, string>; col: number; r: number; labelIndex: number }[];
 	}
 
 	let pages = $derived.by(() => {
@@ -41,7 +41,7 @@
 				for (let c = 0; c < design.labelCols; c++) {
 					const idx = p * perPage + r * design.labelCols + c;
 					if (idx >= spreadsheet.data.length) break;
-					labels.push({ row: spreadsheet.data[idx], col: c, r });
+					labels.push({ row: spreadsheet.data[idx], col: c, r, labelIndex: idx });
 				}
 			}
 
@@ -59,10 +59,15 @@
 		return marginTop + row * (labelHpx + vGap);
 	}
 
-	function getFieldText(field: LabelField, row: Record<string, string>): string {
-		if (field.type === 'static') return field.text || '';
-		if (field.column) return row[field.column] ?? '';
-		return '';
+	function getFieldText(field: LabelField, row: Record<string, string>, labelIndex: number): string {
+		if (field.type === 'sequence') {
+			return formatSequenceValue(field, labelIndex);
+		}
+		else if (field.column) {
+			return row[field.column] ?? '';
+		}
+
+		return field.text || '';
 	}
 
 	const qrCache = new Map<string, string>();
@@ -130,7 +135,8 @@
 								"
 							>
 								{#if field.type === 'qr'}
-									{@const val = field.column ? (label.row[field.column] ?? '') : ''}
+									{@const val = field.column ? (label.row[field.column] ?? '') : field.text}
+									
 									{#if val}
 										{#await getQrDataUrl(val, Math.min(field.w, field.h)) then src}
 											<img
@@ -154,7 +160,7 @@
 											text-overflow: {field.wrap === 'normal' ? 'clip' : 'ellipsis'};
 										"
 									>
-										{getFieldText(field, label.row)}
+										{getFieldText(field, label.row, label.labelIndex)}
 									</div>
 								{/if}
 							</div>

@@ -10,6 +10,7 @@
 		zoomIn,
 		zoomOut,
 		zoomReset,
+		formatSequenceValue,
 		type LabelField
 	} from '$lib/stores/design.svelte';
 	import { saveTemplate, getActiveTemplateName } from '$lib/stores/templates.svelte';
@@ -20,6 +21,7 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import Save from '@lucide/svelte/icons/save';
+	import * as Select from '$lib/components/ui/select';
 	import * as Dialog from '$lib/components/ui/dialog';
     import { cn } from 'tailwind-variants';
 
@@ -68,9 +70,11 @@
 	let resizeFieldStartW = 0;
 	let resizeFieldStartH = 0;
 
+	let sampleRow = $state(0);
+
 	function getFieldDisplayText(field: LabelField): string {
-		if (field.type === 'static') {
-			return field.text || 'Label Text';
+		if (field.type === 'sequence') {
+			return formatSequenceValue(field, sampleRow);
 		}
 
 		if (field.type === 'qr') {
@@ -78,10 +82,15 @@
 		}
 
 		if (field.column && spreadsheet.data.length > 0) {
-			return spreadsheet.data[0][field.column] ?? field.column;
+			const row = spreadsheet.data[sampleRow] ?? spreadsheet.data[0];
+			return row[field.column] ?? field.column;
 		}
 
-		return field.column ?? '';
+		if (field.text) {
+			return field.text;
+		}
+
+		return field.column ?? 'No data';
 	}
 
 	function onCanvasClick(e: MouseEvent) {
@@ -214,6 +223,29 @@
 			Delete
 		</Button>
 
+		{#if spreadsheet.data.length > 1}
+			<span class="mx-1 h-4 w-px bg-border"></span>
+
+			<div class="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+				<span>Sample</span>
+				<Select.Root
+					type="single"
+					value={String(sampleRow)}
+					onValueChange={(v) => { if (v) sampleRow = parseInt(v); }}
+				>
+					<Select.Trigger class="h-7 w-16" size="sm">
+						{sampleRow + 1}
+					</Select.Trigger>
+					
+					<Select.Content>
+						{#each spreadsheet.data as _, i}
+							<Select.Item value={String(i)}>{i + 1}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</div>
+		{/if}
+
 		<span class="mx-1 h-4 w-px bg-border"></span>
 
 		<Button
@@ -269,10 +301,13 @@
 				>
 					{#if field.type === 'qr'}
 						<div
-							class="flex size-full items-center justify-center border border-border"
+							class="flex size-full flex-col items-center justify-center border border-border"
 							style="background: repeating-conic-gradient(var(--muted) 0% 25%, white 0% 50%) 50% / 8px 8px;"
 						>
 							<span class="font-mono text-[9px] text-muted-foreground">QR</span>
+							<span class="max-w-full truncate px-1 text-[7px] text-muted-foreground/70">
+								{field.column ?? (field.text ? 'manual' : 'no data')}
+							</span>
 						</div>
 					{:else}
 						<div

@@ -2,10 +2,12 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
-	import { getDesign, PPMM, updateField, deleteSelected, getSelectedField } from '$lib/stores/design.svelte';
+	import { getDesign, PPMM, updateField, deleteSelected, getSelectedField, formatSequenceValue } from '$lib/stores/design.svelte';
+	import { getSpreadsheet } from '$lib/stores/spreadsheet.svelte';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 
 	const design = getDesign();
+	const spreadsheet = getSpreadsheet();
 	let field = $derived(getSelectedField());
 	let labelWpx = $derived(design.labelW * PPMM);
 	let labelHpx = $derived(design.labelH * PPMM);
@@ -37,29 +39,157 @@
 <aside class="flex w-65 shrink-0 flex-col overflow-y-auto border-l border-border bg-card">
 	{#if !field}
 		<div class="text-muted-foreground px-5 py-10 text-center text-[13px] leading-relaxed">
-			Select a field on the label to edit its properties, or click a column on the left to add it.
+			Select an element on the label to edit its properties, or add one from the left sidebar.
 		</div>
 	{:else}
 		<section class="border-b border-border px-4 py-3.5">
 			<div class="text-[13px] font-semibold">
-				{#if field.type === 'static'}
-					Static Text
-				{:else if field.type === 'qr'}
-					QR: {field.column}
+				{#if field.type === 'qr'}
+					QR Code
+				{:else if field.type === 'sequence'}
+					Sequential Number
 				{:else}
-					{field.column}
+					Text Field
 				{/if}
 			</div>
 			<div class="text-muted-foreground text-[11px]">
-				{#if field.type === 'static'}
-					Static text field
-				{:else if field.type === 'qr'}
-					QR Code
+				{#if field.type === 'qr'}
+					{field.column ? `Column: ${field.column}` : (field.text ? 'Manual data' : 'No data source')}
+				{:else if field.type === 'sequence'}
+					Auto-incrementing number
 				{:else}
-					CSV text field
+					{field.column ? `Column: ${field.column}` : (field.text ? 'Manual text' : 'No data source')}
 				{/if}
 			</div>
 		</section>
+
+		{#if field.type === 'text' || field.type === 'qr'}
+			<section class="border-b border-border px-4 py-3.5">
+				<h3 class="text-muted-foreground mb-2.5 text-[10px] font-bold uppercase tracking-wider">
+					Data Source
+				</h3>
+
+				<Select.Root
+					type="single"
+					value={field.column ?? '__manual__'}
+					onValueChange={(v) => {
+						if (v === '__manual__') {
+							update({ column: null });
+						} else if (v) {
+							update({ column: v });
+						}
+					}}
+				>
+					<Select.Trigger class="w-full" size="sm">
+						{field.column ?? 'Manual Entry'}
+					</Select.Trigger>
+					<Select.Content>
+						<Select.Item value="__manual__">Manual Entry</Select.Item>
+						{#each spreadsheet.headers as header}
+							<Select.Item value={header}>{header}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+
+				{#if !field.column}
+					<div class="mt-2">
+						<span class="text-muted-foreground mb-1 block text-[10px]">
+							{field.type === 'qr' ? 'QR Data' : 'Text Content'}
+						</span>
+						<Input
+							type="text"
+							placeholder={field.type === 'qr' ? 'Enter QR data…' : 'Enter text…'}
+							value={field.text}
+							oninput={(e) => update({ text: e.currentTarget.value })}
+							class="h-7 text-xs"
+						/>
+					</div>
+				{/if}
+			</section>
+		{/if}
+
+		{#if field.type === 'sequence'}
+			<section class="border-b border-border px-4 py-3.5">
+				<h3 class="text-muted-foreground mb-2.5 text-[10px] font-bold uppercase tracking-wider">
+					Sequence Settings
+				</h3>
+
+				<div class="flex flex-col gap-2">
+					<div class="grid grid-cols-2 gap-2">
+						<div>
+							<span class="text-muted-foreground mb-1 block text-[10px]">Start</span>
+							<Input
+								type="number"
+								min={0}
+								step={1}
+								value={field.seqStart ?? 1}
+								oninput={(e) => {
+									const v = parseInt(e.currentTarget.value);
+									if (!isNaN(v)) update({ seqStart: v });
+								}}
+								class="h-7 text-xs"
+							/>
+						</div>
+						<div>
+							<span class="text-muted-foreground mb-1 block text-[10px]">Step</span>
+							<Input
+								type="number"
+								min={1}
+								step={1}
+								value={field.seqStep ?? 1}
+								oninput={(e) => {
+									const v = parseInt(e.currentTarget.value);
+									if (!isNaN(v) && v > 0) update({ seqStep: v });
+								}}
+								class="h-7 text-xs"
+							/>
+						</div>
+					</div>
+
+					<div>
+						<span class="text-muted-foreground mb-1 block text-[10px]">Padding (min digits)</span>
+						<Input
+							type="number"
+							min={1}
+							max={10}
+							step={1}
+							value={field.seqPadding ?? 1}
+							oninput={(e) => {
+								const v = parseInt(e.currentTarget.value);
+								if (!isNaN(v) && v >= 1) update({ seqPadding: v });
+							}}
+							class="h-7 text-xs"
+						/>
+					</div>
+
+					<div>
+						<span class="text-muted-foreground mb-1 block text-[10px]">Prefix</span>
+						<Input
+							type="text"
+							placeholder="e.g. INV-"
+							value={field.seqPrefix ?? ''}
+							oninput={(e) => update({ seqPrefix: e.currentTarget.value })}
+							class="h-7 text-xs"
+						/>
+					</div>
+
+					<div>
+						<span class="text-muted-foreground mb-1 block text-[10px]">Suffix</span>
+						<Input
+							type="text"
+							placeholder="e.g. -A"
+							value={field.seqSuffix ?? ''}
+							oninput={(e) => update({ seqSuffix: e.currentTarget.value })}
+							class="h-7 text-xs"
+						/>
+					</div>
+
+					<div class="text-muted-foreground mt-1 rounded border border-border bg-muted/50 px-2 py-1.5 font-mono text-[10px]">
+						Preview: {formatSequenceValue(field, 0)}, {formatSequenceValue(field, 1)}, {formatSequenceValue(field, 2)}…
+					</div>
+				</div>
+			</section>
+		{/if}
 
 		{#if field.type !== 'qr'}
 			<section class="border-b border-border px-4 py-3.5">
@@ -131,22 +261,6 @@
 						/>
 					</div>
 				</div>
-			</section>
-		{/if}
-
-		{#if field.type === 'static'}
-			<section class="border-b border-border px-4 py-3.5">
-				<h3 class="text-muted-foreground mb-2.5 text-[10px] font-bold uppercase tracking-wider">
-					Text Content
-				</h3>
-
-				<Input
-					type="text"
-					placeholder="Enter text…"
-					value={field.text}
-					oninput={(e) => update({ text: e.currentTarget.value })}
-					class="h-7 text-xs"
-				/>
 			</section>
 		{/if}
 

@@ -13,7 +13,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
 	label98x25: { label: '98 × 25.4 mm — 20/sheet', w: 98, h: 25.4, cols: 2, rows: 10, mt: 12.7, ml: 5.5, hg: 3, vg: 3 },
 };
 
-export type FieldType = 'text' | 'qr' | 'static';
+export type FieldType = 'text' | 'qr' | 'sequence';
 
 export interface PaperPreset {
 	label: string;
@@ -47,6 +47,11 @@ export interface LabelField {
 	textAlign: string;
 	color: string;
 	wrap: string;
+	seqStart?: number;
+	seqStep?: number;
+	seqPadding?: number;
+	seqPrefix?: string;
+	seqSuffix?: string;
 }
 
 interface DesignState {
@@ -134,7 +139,7 @@ export function markLabelCustom() {
 	design.labelPreset = 'custom';
 }
 
-export function addField(type: FieldType, column: string | null): LabelField {
+export function addField(type: FieldType, column: string | null = null): LabelField {
 	const id = crypto.randomUUID();
 	const labelW = design.labelW * PPMM;
 	const labelH = design.labelH * PPMM;
@@ -158,21 +163,26 @@ export function addField(type: FieldType, column: string | null): LabelField {
 			color: '#222222',
 			wrap: 'nowrap'
 		};
-	} else if (type === 'static') {
+	} else if (type === 'sequence') {
 		field = {
 			id,
 			type,
 			column: null,
-			text: 'Label Text',
+			text: '',
 			x: 4,
 			y: design.fields.length * 18,
-			w: labelW * 0.6,
+			w: labelW * 0.3,
 			h: 20,
 			fontSize: 11,
 			fontWeight: '400',
 			textAlign: 'left',
 			color: '#222222',
-			wrap: 'nowrap'
+			wrap: 'nowrap',
+			seqStart: 1,
+			seqStep: 1,
+			seqPadding: 1,
+			seqPrefix: '',
+			seqSuffix: ''
 		};
 	} else {
 		field = {
@@ -236,4 +246,14 @@ export function zoomOut() {
 
 export function zoomReset() {
 	design.canvasScale = DEFAULT_SCALE;
+}
+
+export function formatSequenceValue(field: LabelField, index: number): string {
+	const start = field.seqStart ?? 1;
+	const step = field.seqStep ?? 1;
+	const padding = field.seqPadding ?? 1;
+	const prefix = field.seqPrefix ?? '';
+	const suffix = field.seqSuffix ?? '';
+	const num = start + index * step;
+	return `${prefix}${String(num).padStart(padding, '0')}${suffix}`;
 }

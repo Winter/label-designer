@@ -12,7 +12,6 @@
 		addField
 	} from '$lib/stores/design.svelte';
 	import { getSpreadsheet } from '$lib/stores/spreadsheet.svelte';
-	import Plus from '@lucide/svelte/icons/plus';
 
 	const design = getDesign();
 	const spreadsheet = getSpreadsheet();
@@ -215,53 +214,57 @@
 
 	<section class="border-b border-border px-4 py-3.5">
 		<h3 class="text-muted-foreground mb-2.5 text-[10px] font-bold uppercase tracking-wider">
-			Columns — click to add
+			Elements
 		</h3>
 
 		<div class="flex flex-col gap-1">
-			{#each spreadsheet.headers as header}
-				<button
-					class="flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-2 text-left text-[12px] transition-colors hover:border-primary hover:bg-primary/10"
-					onclick={() => addField('text', header)}
-				>
-					<span class="size-2 shrink-0 rounded-full bg-chart-1"></span>
-					<span class="min-w-0 flex-1 truncate">{header}</span>
-					<span class="text-muted-foreground shrink-0 font-mono text-[10px]">TEXT</span>
-				</button>
-			{/each}
+			<button
+				class="flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-2 text-left text-[12px] transition-colors hover:border-primary hover:bg-primary/10"
+				onclick={() => addField('text')}
+			>
+				<span class="size-2 shrink-0 rounded-full bg-chart-1"></span>
+				<span class="min-w-0 flex-1 truncate">Text Field</span>
+				<span class="text-muted-foreground shrink-0 font-mono text-[10px]">TEXT</span>
+			</button>
+
+			<button
+				class="flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-2 text-left text-[12px] transition-colors hover:border-primary hover:bg-primary/10"
+				onclick={() => addField('qr')}
+			>
+				<span class="size-2 shrink-0 rounded-full bg-chart-3"></span>
+				<span class="min-w-0 flex-1 truncate">QR Code</span>
+				<span class="text-muted-foreground shrink-0 font-mono text-[10px]">QR</span>
+			</button>
+
+			<button
+				class="flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-2 text-left text-[12px] transition-colors hover:border-primary hover:bg-primary/10"
+				onclick={() => addField('sequence')}
+			>
+				<span class="size-2 shrink-0 rounded-full bg-chart-4"></span>
+				<span class="min-w-0 flex-1 truncate">Sequential Number</span>
+				<span class="text-muted-foreground shrink-0 font-mono text-[10px]">SEQ</span>
+			</button>
 		</div>
 	</section>
 
-	<section class="border-b border-border px-4 py-3.5">
-		<h3 class="text-muted-foreground mb-2.5 text-[10px] font-bold uppercase tracking-wider">
-			QR Code — click to add
-		</h3>
+	{#if spreadsheet.headers.length > 0}
+		<section class="border-b border-border px-4 py-3.5">
+			<h3 class="text-muted-foreground mb-2.5 text-[10px] font-bold uppercase tracking-wider">
+				Spreadsheet Columns
+			</h3>
 
-		<div class="flex flex-col gap-1">
-			{#each spreadsheet.headers as header}
-				<button
-					class="flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-2 text-left text-[12px] transition-colors hover:border-primary hover:bg-primary/10"
-					onclick={() => addField('qr', header)}
-				>
-					<span class="size-2 shrink-0 rounded-full bg-chart-3"></span>
-					<span class="min-w-0 flex-1 truncate">{header}</span>
-					<span class="text-muted-foreground shrink-0 font-mono text-[10px]">QR</span>
-				</button>
-			{/each}
-		</div>
-	</section>
-
-	<section class="border-b border-border px-4 py-3.5">
-		<h3 class="text-muted-foreground mb-2.5 text-[10px] font-bold uppercase tracking-wider">
-			Static Text
-		</h3>
-
-		<button
-			class="text-muted-foreground flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-3 py-2 text-[12px] transition-colors hover:border-primary hover:text-primary"
-			onclick={() => addField('static', null)}
-		>
-			<Plus class="size-3.5" />
-			Add static text field
-		</button>
-	</section>
+			<div class="flex flex-col gap-1">
+				{#each spreadsheet.headers as header}
+					<button
+						class="flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-2 text-left text-[12px] transition-colors hover:border-primary hover:bg-primary/10"
+						onclick={() => addField('text', header)}
+					>
+						<span class="size-2 shrink-0 rounded-full bg-chart-1"></span>
+						<span class="min-w-0 flex-1 truncate">{header}</span>
+						<span class="text-muted-foreground shrink-0 font-mono text-[10px]">TEXT</span>
+					</button>
+				{/each}
+			</div>
+		</section>
+	{/if}
 </aside>

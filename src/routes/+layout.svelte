@@ -41,10 +41,12 @@
 
 <div class="flex h-screen flex-col overflow-hidden">
 	<header class="print-hide bg-card border-border flex h-13 shrink-0 items-center gap-4 border-b px-5">
-		<div class="text-primary flex items-center gap-2.5 border-r border-border pr-4 text-[15px] font-bold tracking-tight">
-			<LayoutGrid class="size-5.5" />
-			Label Designer
-		</div>
+		<a href='/'>	
+			<div class="text-primary flex items-center gap-2.5 border-r border-border pr-4 text-[15px] font-bold tracking-tight">
+				<LayoutGrid class="size-5.5" />
+				Label Designer
+			</div>
+		</a>
 
 		<nav class="flex gap-0.5">
 			{#each nav as navItem, index}
