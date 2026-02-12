@@ -160,7 +160,7 @@
 			</div>
 		</div>
 
-		<div class="mt-2 grid grid-cols-3 gap-2">
+		<div class="mt-2 grid grid-cols-2 gap-2">
 			<div>
 				<span class="text-muted-foreground mb-1 block text-[10px]">Top (mm)</span>
 				<Input
@@ -184,14 +184,28 @@
 					class="h-7 text-xs"
 				/>
 			</div>
+		</div>
 
+		<div class="mt-2 grid grid-cols-2 gap-2">
 			<div>
-				<span class="text-muted-foreground mb-1 block text-[10px]">Gap (mm)</span>
+				<span class="text-muted-foreground mb-1 block text-[10px]">Horizontal Gap (mm)</span>
 				<Input
 					type="number"
 					min={0}
 					step={0.5}
 					bind:value={design.labelHg}
+					oninput={onLabelFieldChange}
+					class="h-7 text-xs"
+				/>
+			</div>
+
+			<div>
+				<span class="text-muted-foreground mb-1 block text-[10px]">Vertical Gap (mm)</span>
+				<Input
+					type="number"
+					min={0}
+					step={0.5}
+					bind:value={design.labelVg}
 					oninput={onLabelFieldChange}
 					class="h-7 text-xs"
 				/>

@@ -10,7 +10,7 @@ export const PAPER_PRESETS: Record<string, PaperPreset> = {
 };
 
 export const LABEL_PRESETS: Record<string, LabelPreset> = {
-	label98x25: { label: '98 × 25.4 mm — 20/sheet', w: 98, h: 25.4, cols: 2, rows: 10, mt: 12.7, ml: 5.5, hg: 3 },
+	label98x25: { label: '98 × 25.4 mm — 20/sheet', w: 98, h: 25.4, cols: 2, rows: 10, mt: 12.7, ml: 5.5, hg: 3, vg: 3 },
 };
 
 export type FieldType = 'text' | 'qr' | 'static';
@@ -30,6 +30,7 @@ export interface LabelPreset {
 	mt: number;
 	ml: number;
 	hg: number;
+	vg: number;
 }
 
 export interface LabelField {
@@ -60,6 +61,7 @@ interface DesignState {
 	labelMt: number;
 	labelMl: number;
 	labelHg: number;
+	labelVg: number;
 	fields: LabelField[];
 	selectedFieldId: string | null;
 	fieldIdCounter: number;
@@ -81,6 +83,7 @@ const design = $state<DesignState>({
 	labelMt: defaultLabel.mt,
 	labelMl: defaultLabel.ml,
 	labelHg: defaultLabel.hg,
+	labelVg: defaultLabel.vg,
 
 	fields: [],
 	selectedFieldId: null,
@@ -121,6 +124,7 @@ export function setLabelPreset(preset: string) {
 		design.labelMt = labelPreset.mt;
 		design.labelMl = labelPreset.ml;
 		design.labelHg = labelPreset.hg;
+		design.labelVg = labelPreset.vg;
 	}
 }
 
