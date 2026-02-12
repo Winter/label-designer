@@ -88,6 +88,13 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Label Designer — Import Data & Design Custom Labels</title>
+	<meta name="description" content="Import your CSV or Excel spreadsheet and design printable labels. Free, private, and runs entirely in your browser." />
+	<meta property="og:title" content="Label Designer — Import Data & Design Custom Labels" />
+	<meta property="og:description" content="Import your CSV or Excel spreadsheet and design printable labels. Free, private, and runs entirely in your browser." />
+</svelte:head>
+
 <div class="flex h-full w-full items-center justify-center overflow-y-auto">
 	<div class="w-full max-w-130 px-6 py-12">
 		<h1 class="text-center text-[28px] font-bold tracking-tight">Import your data</h1>
@@ -208,5 +215,9 @@
 				</div>
 			{/if}
 		</div>
+
+		<footer class="mt-12 text-center text-xs text-muted-foreground">
+			&copy; {new Date().getFullYear()} Edward. All rights reserved.
+		</footer>
 	</div>
 </div>

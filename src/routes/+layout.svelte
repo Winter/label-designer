@@ -37,6 +37,14 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 	<title>Label Designer</title>
+	<meta name="description" content="Free browser-based label designer. Import CSV or Excel data, design custom label layouts, and print. All data stays on your device." />
+	<meta property="og:title" content="Label Designer" />
+	<meta property="og:description" content="Free browser-based label designer. Import CSV or Excel data, design custom label layouts, and print. All data stays on your device." />
+	<meta property="og:type" content="website" />
+	<meta property="og:site_name" content="Label Designer" />
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content="Label Designer" />
+	<meta name="twitter:description" content="Free browser-based label designer. Import CSV or Excel data, design custom label layouts, and print. All data stays on your device." />
 </svelte:head>
 
 <div class="flex h-screen flex-col overflow-hidden">
