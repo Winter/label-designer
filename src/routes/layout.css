@@ -134,3 +134,36 @@
     background: var(--muted-foreground);
   }
 }
+
+@media print {
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+  body > div,
+  body > div > div,
+  body > div > div > main,
+  .print-root,
+  .print-scroll {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .print-hide {
+    display: none !important;
+  }
+  .print-scroll {
+    padding: 0 !important;
+    background: none !important;
+  }
+  .print-page {
+    box-shadow: none !important;
+    margin: 0 !important;
+    page-break-after: always;
+  }
+  @page {
+    margin: 0;
+    size: auto;
+  }
+}
