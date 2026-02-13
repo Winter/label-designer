@@ -303,12 +303,7 @@
 						<div
 							class="flex size-full flex-col items-center justify-center border border-border"
 							style="background: repeating-conic-gradient(var(--muted) 0% 25%, white 0% 50%) 50% / 8px 8px;"
-						>
-							<span class="font-mono text-[9px] text-muted-foreground">QR</span>
-							<span class="max-w-full truncate px-1 text-[7px] text-muted-foreground/70">
-								{field.column ?? (field.text ? 'manual' : 'no data')}
-							</span>
-						</div>
+						></div>
 					{:else}
 						<div
 							class="size-full overflow-hidden"
@@ -355,7 +350,7 @@
 				type="text"
 				bind:value={templateName}
 				placeholder="e.g. Product Labels 2x10"
-				class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-ring"
+				class="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-ring"
 				onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSaveTemplate(); } }}
 			/>
 

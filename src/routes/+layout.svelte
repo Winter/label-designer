@@ -3,10 +3,11 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
-	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
 	import { cn } from 'tailwind-variants';
 	import { hasSpreadsheetData } from '$lib/stores/spreadsheet.svelte';
 	import { getDesign } from '$lib/stores/design.svelte';
+	import { ModeWatcher } from 'mode-watcher';
+	import { LightSwitch } from '$lib/components/ui/light-switch';
 
 	let { children } = $props();
 
@@ -48,10 +49,11 @@
 </svelte:head>
 
 <div class="flex h-screen flex-col overflow-hidden">
+	<ModeWatcher />
 	<header class="print-hide bg-card border-border flex h-13 shrink-0 items-center gap-4 border-b px-5">
-		<a href='/'>	
-			<div class="text-primary flex items-center gap-2.5 border-r border-border pr-4 text-[15px] font-bold tracking-tight">
-				<LayoutGrid class="size-5.5" />
+		<a href='/'>
+			<div class="text-black dark:text-primary flex items-center gap-2.5 border-r border-border pr-4 text-[15px] font-bold tracking-tight">
+				<img src={favicon} alt="Label Designer Logo" class="size-7" />
 				Label Designer
 			</div>
 		</a>
@@ -77,6 +79,10 @@
 				</Button>
 			{/each}
 		</nav>
+
+		<div class="ml-auto">
+			<LightSwitch variant="ghost" />
+		</div>
 	</header>
 
 	<main class="flex-1 overflow-hidden">

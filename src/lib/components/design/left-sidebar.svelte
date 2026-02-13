@@ -222,7 +222,7 @@
 				class="flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-2 text-left text-[12px] transition-colors hover:border-primary hover:bg-primary/10"
 				onclick={() => addField('text')}
 			>
-				<span class="size-2 shrink-0 rounded-full bg-chart-1"></span>
+				<span class="size-2 shrink-0 rounded-full bg-blue-500"></span>
 				<span class="min-w-0 flex-1 truncate">Text Field</span>
 				<span class="text-muted-foreground shrink-0 font-mono text-[10px]">TEXT</span>
 			</button>
@@ -231,7 +231,7 @@
 				class="flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-2 text-left text-[12px] transition-colors hover:border-primary hover:bg-primary/10"
 				onclick={() => addField('qr')}
 			>
-				<span class="size-2 shrink-0 rounded-full bg-chart-3"></span>
+				<span class="size-2 shrink-0 rounded-full bg-purple-500"></span>
 				<span class="min-w-0 flex-1 truncate">QR Code</span>
 				<span class="text-muted-foreground shrink-0 font-mono text-[10px]">QR</span>
 			</button>
@@ -240,7 +240,7 @@
 				class="flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-2 text-left text-[12px] transition-colors hover:border-primary hover:bg-primary/10"
 				onclick={() => addField('sequence')}
 			>
-				<span class="size-2 shrink-0 rounded-full bg-chart-4"></span>
+				<span class="size-2 shrink-0 rounded-full bg-yellow-500"></span>
 				<span class="min-w-0 flex-1 truncate">Sequential Number</span>
 				<span class="text-muted-foreground shrink-0 font-mono text-[10px]">SEQ</span>
 			</button>
@@ -259,7 +259,7 @@
 						class="flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-2 text-left text-[12px] transition-colors hover:border-primary hover:bg-primary/10"
 						onclick={() => addField('text', header)}
 					>
-						<span class="size-2 shrink-0 rounded-full bg-chart-1"></span>
+						<span class="size-2 shrink-0 rounded-full bg-blue-500"></span>
 						<span class="min-w-0 flex-1 truncate">{header}</span>
 						<span class="text-muted-foreground shrink-0 font-mono text-[10px]">TEXT</span>
 					</button>
