@@ -164,16 +164,17 @@ export function addField(type: FieldType, column: string | null = null): LabelFi
 			wrap: 'nowrap'
 		};
 	} else if (type === 'sequence') {
+		const fontSize = 11;
 		field = {
 			id,
 			type,
 			column: null,
 			text: '',
 			x: 4,
-			y: design.fields.length * 18,
-			w: labelW * 0.3,
-			h: 20,
-			fontSize: 11,
+			y: design.fields.length * Math.ceil(fontSize * 1.2),
+			w: Math.ceil(fontSize * 0.6 * 10),
+			h: Math.ceil(fontSize * 1.2),
+			fontSize,
 			fontWeight: '400',
 			textAlign: 'left',
 			color: '#222222',
@@ -185,16 +186,17 @@ export function addField(type: FieldType, column: string | null = null): LabelFi
 			seqSuffix: ''
 		};
 	} else {
+		const fontSize = 11;
 		field = {
 			id,
 			type,
 			column,
 			text: '',
 			x: 4,
-			y: design.fields.length * 18,
-			w: labelW * 0.7,
-			h: 18,
-			fontSize: 11,
+			y: design.fields.length * Math.ceil(fontSize * 1.2),
+			w: Math.ceil(fontSize * 0.6 * 20),
+			h: Math.ceil(fontSize * 1.2),
+			fontSize,
 			fontWeight: '400',
 			textAlign: 'left',
 			color: '#222222',
