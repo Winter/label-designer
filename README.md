@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://label-designer.net"><strong>Website</strong></a> · <a href="#features"><strong>Features</strong></a> · <a href="#getting-started"><strong>Getting Started</strong></a> · <a href="#usage"><strong>Usage</strong></a> · <a href="https://github.com/Edward/label-designer/issues"><strong>Issues</strong></a>
+  <a href="https://label-designer.net"><strong>Website</strong></a> · <a href="#features"><strong>Features</strong></a> · <a href="#getting-started"><strong>Getting Started</strong></a> · <a href="#usage"><strong>Usage</strong></a> · <a href="https://github.com/winter/label-designer/issues"><strong>Issues</strong></a>
 </p>
 
 <p align="center">
@@ -60,7 +60,7 @@ Label Designer is a **privacy-first** web app for creating and printing labels f
 
 ```bash
 # Clone the repository
-git clone https://github.com/Edward/label-designer.git
+git clone https://github.com/winter/label-designer.git
 cd label-designer
 
 # Install dependencies
@@ -113,8 +113,8 @@ bun run preview
 
 Contributions are welcome! Here's how you can help:
 
-- **Bug reports** — [Open an issue](https://github.com/Edward/label-designer/issues) with steps to reproduce
-- **Feature requests** — Share ideas in [Issues](https://github.com/Edward/label-designer/issues)
+- **Bug reports** — [Open an issue](https://github.com/winter/label-designer/issues) with steps to reproduce
+- **Feature requests** — Share ideas in [Issues](https://github.com/winter/label-designer/issues)
 - **Pull requests** — Fork, create a branch, and submit a PR
 
 ## License
