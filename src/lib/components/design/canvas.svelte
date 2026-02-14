@@ -21,10 +21,13 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import Save from '@lucide/svelte/icons/save';
+	import Grid3x3 from '@lucide/svelte/icons/grid-3x3';
+	import Magnet from '@lucide/svelte/icons/magnet';
 	import * as Select from '$lib/components/ui/select';
 	import * as Dialog from '$lib/components/ui/dialog';
     import { cn } from 'tailwind-variants';
 	import { computeSnap, computeSnapForResize, type SnapGuide } from '$lib/utils/snap';
+	import { getSettings } from '$lib/stores/settings.svelte';
 
 	let dialogOpen = $state(false);
 	let templateName = $state('');
@@ -53,6 +56,7 @@
 
 	const design = getDesign();
 	const spreadsheet = getSpreadsheet();
+	const settings = getSettings();
 
 	let canvasW = $derived(design.labelW * PPMM * design.canvasScale);
 	let canvasH = $derived(design.labelH * PPMM * design.canvasScale);
@@ -143,20 +147,25 @@
 		const freeX = Math.max(0, Math.min(maxX, dragFieldStartX + dx));
 		const freeY = Math.max(0, Math.min(maxY, dragFieldStartY + dy));
 
-		const otherFields = design.fields.filter((f) => f.id !== dragFieldId);
-		const snap = computeSnap(
-			{ x: freeX, y: freeY, w: field.w, h: field.h },
-			otherFields,
-			canvasDesignW,
-			canvasDesignH
-		);
+		if (settings.smartGuides) {
+			const otherFields = design.fields.filter((f) => f.id !== dragFieldId);
+			const snap = computeSnap(
+				{ x: freeX, y: freeY, w: field.w, h: field.h },
+				otherFields,
+				canvasDesignW,
+				canvasDesignH
+			);
 
-		updateField(dragFieldId, {
-			x: Math.max(0, Math.min(maxX, snap.x)),
-			y: Math.max(0, Math.min(maxY, snap.y))
-		});
+			updateField(dragFieldId, {
+				x: Math.max(0, Math.min(maxX, snap.x)),
+				y: Math.max(0, Math.min(maxY, snap.y))
+			});
 
-		activeGuides = snap.guides;
+			activeGuides = snap.guides;
+		} else {
+			updateField(dragFieldId, { x: freeX, y: freeY });
+			activeGuides = [];
+		}
 	}
 
 	function onFieldPointerUp() {
@@ -201,20 +210,25 @@
 		const freeW = Math.max(10, resizeFieldStartW + dx);
 		const freeH = Math.max(10, resizeFieldStartH + dy);
 
-		const otherFields = design.fields.filter((f) => f.id !== resizeFieldId);
-		const snap = computeSnapForResize(
-			{ x: field.x, y: field.y, w: freeW, h: freeH },
-			otherFields,
-			canvasDesignW,
-			canvasDesignH
-		);
+		if (settings.smartGuides) {
+			const otherFields = design.fields.filter((f) => f.id !== resizeFieldId);
+			const snap = computeSnapForResize(
+				{ x: field.x, y: field.y, w: freeW, h: freeH },
+				otherFields,
+				canvasDesignW,
+				canvasDesignH
+			);
 
-		updateField(resizeFieldId, {
-			w: Math.max(10, snap.w),
-			h: Math.max(10, snap.h)
-		});
+			updateField(resizeFieldId, {
+				w: Math.max(10, snap.w),
+				h: Math.max(10, snap.h)
+			});
 
-		activeGuides = snap.guides;
+			activeGuides = snap.guides;
+		} else {
+			updateField(resizeFieldId, { w: freeW, h: freeH });
+			activeGuides = [];
+		}
 	}
 
 	function onResizePointerUp() {
@@ -248,6 +262,14 @@
 
 		<Button variant="ghost" size="sm" class="size-7 p-0" onclick={zoomReset} title="Reset zoom">
 			<Maximize class="size-4" />
+		</Button>
+
+		<Button variant="ghost" size="sm" class={cn("size-7 p-0", settings.showGrid && "bg-accent text-accent-foreground")} onclick={() => settings.showGrid = !settings.showGrid} title="Toggle grid">
+			<Grid3x3 class="size-4" />
+		</Button>
+
+		<Button variant="ghost" size="sm" class={cn("size-7 p-0", settings.smartGuides && "bg-accent text-accent-foreground")} onclick={() => settings.smartGuides = !settings.smartGuides} title="Toggle smart guides">
+			<Magnet class="size-4" />
 		</Button>
 
 		<span class="mx-1 h-4 w-px bg-border"></span>
@@ -320,6 +342,22 @@
 			style="width: {canvasW}px; height: {canvasH}px;"
 			onclick={onCanvasClick}
 		>
+			{#if settings.showGrid}
+				{@const gridSize = PPMM * 5 * design.canvasScale}
+				{@const cx = canvasW / 2}
+				{@const cy = canvasH / 2}
+				<svg class="pointer-events-none absolute inset-0 size-full">
+					<defs>
+						<pattern id="grid" x={cx % gridSize} y={cy % gridSize} width={gridSize} height={gridSize} patternUnits="userSpaceOnUse">
+							<path d="M {gridSize} 0 L 0 0 0 {gridSize}" fill="none" stroke="rgba(0,0,0,0.15)" stroke-width="1" stroke-dasharray="4 3" />
+						</pattern>
+					</defs>
+					<rect width="100%" height="100%" fill="url(#grid)" />
+					<line x1={cx} y1="0" x2={cx} y2="100%" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" stroke-dasharray="6 4" stroke-dashoffset={-(cy - 3)} />
+					<line x1="0" y1={cy} x2="100%" y2={cy} stroke="rgba(0,0,0,0.3)" stroke-width="1.5" stroke-dasharray="6 4" stroke-dashoffset={-(cx - 3)} />
+				</svg>
+			{/if}
+
 			{#each design.fields as field (field.id)}
 				{@const isSelected = field.id === design.selectedFieldId}
 
