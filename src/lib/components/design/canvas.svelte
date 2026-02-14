@@ -24,6 +24,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import * as Dialog from '$lib/components/ui/dialog';
     import { cn } from 'tailwind-variants';
+	import { computeSnap, computeSnapForResize, type SnapGuide } from '$lib/utils/snap';
 
 	let dialogOpen = $state(false);
 	let templateName = $state('');
@@ -69,6 +70,8 @@
 	let resizeStartY = 0;
 	let resizeFieldStartW = 0;
 	let resizeFieldStartH = 0;
+
+	let activeGuides: SnapGuide[] = $state([]);
 
 	let sampleRow = $state(0);
 
@@ -132,17 +135,33 @@
 			return;
 		}
 
-		const maxX = design.labelW * PPMM - field.w;
-		const maxY = design.labelH * PPMM - field.h;
+		const canvasDesignW = design.labelW * PPMM;
+		const canvasDesignH = design.labelH * PPMM;
+		const maxX = canvasDesignW - field.w;
+		const maxY = canvasDesignH - field.h;
+
+		const freeX = Math.max(0, Math.min(maxX, dragFieldStartX + dx));
+		const freeY = Math.max(0, Math.min(maxY, dragFieldStartY + dy));
+
+		const otherFields = design.fields.filter((f) => f.id !== dragFieldId);
+		const snap = computeSnap(
+			{ x: freeX, y: freeY, w: field.w, h: field.h },
+			otherFields,
+			canvasDesignW,
+			canvasDesignH
+		);
 
 		updateField(dragFieldId, {
-			x: Math.max(0, Math.min(maxX, dragFieldStartX + dx)),
-			y: Math.max(0, Math.min(maxY, dragFieldStartY + dy))
+			x: Math.max(0, Math.min(maxX, snap.x)),
+			y: Math.max(0, Math.min(maxY, snap.y))
 		});
+
+		activeGuides = snap.guides;
 	}
 
 	function onFieldPointerUp() {
 		dragging = false;
+		activeGuides = [];
 	}
 
 	function onResizePointerDown(e: PointerEvent, fieldId: string) {
@@ -172,14 +191,35 @@
 		const dx = (e.clientX - resizeStartX) / design.canvasScale;
 		const dy = (e.clientY - resizeStartY) / design.canvasScale;
 
+		const field = design.fields.find((f) => f.id === resizeFieldId);
+		if (!field) {
+			return;
+		}
+
+		const canvasDesignW = design.labelW * PPMM;
+		const canvasDesignH = design.labelH * PPMM;
+		const freeW = Math.max(10, resizeFieldStartW + dx);
+		const freeH = Math.max(10, resizeFieldStartH + dy);
+
+		const otherFields = design.fields.filter((f) => f.id !== resizeFieldId);
+		const snap = computeSnapForResize(
+			{ x: field.x, y: field.y, w: freeW, h: freeH },
+			otherFields,
+			canvasDesignW,
+			canvasDesignH
+		);
+
 		updateField(resizeFieldId, {
-			w: Math.max(10, resizeFieldStartW + dx),
-			h: Math.max(10, resizeFieldStartH + dy)
+			w: Math.max(10, snap.w),
+			h: Math.max(10, snap.h)
 		});
+
+		activeGuides = snap.guides;
 	}
 
 	function onResizePointerUp() {
 		resizing = false;
+		activeGuides = [];
 	}
 
 	function onKeydown(e: KeyboardEvent) {
@@ -331,6 +371,20 @@
 						></div>
 					{/if}
 				</div>
+			{/each}
+
+			{#each activeGuides as guide (`${guide.axis}-${guide.position}`)}
+				{#if guide.axis === 'x'}
+					<div
+						class="pointer-events-none absolute top-0 z-50"
+						style="left: {guide.position * design.canvasScale}px; width: 1px; height: 100%; background: cyan;"
+					></div>
+				{:else}
+					<div
+						class="pointer-events-none absolute left-0 z-50"
+						style="top: {guide.position * design.canvasScale}px; height: 1px; width: 100%; background: magenta;"
+					></div>
+				{/if}
 			{/each}
 		</div>
 	</div>
