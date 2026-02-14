@@ -86,6 +86,7 @@
 	let marqueeCurrentX = $state(0);
 	let marqueeCurrentY = $state(0);
 	let canvasEl: HTMLDivElement;
+	let wrapperEl: HTMLDivElement;
 
 	let sampleRow = $state(0);
 
@@ -110,40 +111,45 @@
 		return field.column ?? 'No data';
 	}
 
-	function onCanvasPointerDown(e: PointerEvent) {
-		if (e.target !== e.currentTarget) return;
+	function onWrapperPointerDown(e: PointerEvent) {
+		if (e.target !== wrapperEl && e.target !== canvasEl) return;
 		e.preventDefault();
 
-		const rect = canvasEl.getBoundingClientRect();
-		marqueeStartX = e.clientX - rect.left;
-		marqueeStartY = e.clientY - rect.top;
+		const rect = wrapperEl.getBoundingClientRect();
+		marqueeStartX = e.clientX - rect.left + wrapperEl.scrollLeft;
+		marqueeStartY = e.clientY - rect.top + wrapperEl.scrollTop;
 		marqueeCurrentX = marqueeStartX;
 		marqueeCurrentY = marqueeStartY;
 		marquee = true;
 
-		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+		wrapperEl.setPointerCapture(e.pointerId);
 	}
 
-	function onCanvasPointerMove(e: PointerEvent) {
+	function onWrapperPointerMove(e: PointerEvent) {
 		if (!marquee) return;
 
-		const rect = canvasEl.getBoundingClientRect();
-		marqueeCurrentX = Math.max(0, Math.min(canvasW, e.clientX - rect.left));
-		marqueeCurrentY = Math.max(0, Math.min(canvasH, e.clientY - rect.top));
+		const rect = wrapperEl.getBoundingClientRect();
+		marqueeCurrentX = e.clientX - rect.left + wrapperEl.scrollLeft;
+		marqueeCurrentY = e.clientY - rect.top + wrapperEl.scrollTop;
 	}
 
-	function onCanvasPointerUp() {
+	function onWrapperPointerUp() {
 		if (!marquee) return;
 		marquee = false;
-
-		const x1 = Math.min(marqueeStartX, marqueeCurrentX) / design.canvasScale;
-		const y1 = Math.min(marqueeStartY, marqueeCurrentY) / design.canvasScale;
-		const x2 = Math.max(marqueeStartX, marqueeCurrentX) / design.canvasScale;
-		const y2 = Math.max(marqueeStartY, marqueeCurrentY) / design.canvasScale;
 
 		const wasDrag = Math.abs(marqueeCurrentX - marqueeStartX) > 3 || Math.abs(marqueeCurrentY - marqueeStartY) > 3;
 
 		if (wasDrag) {
+			const canvasRect = canvasEl.getBoundingClientRect();
+			const wrapperRect = wrapperEl.getBoundingClientRect();
+			const canvasOffsetX = canvasRect.left - wrapperRect.left + wrapperEl.scrollLeft;
+			const canvasOffsetY = canvasRect.top - wrapperRect.top + wrapperEl.scrollTop;
+
+			const x1 = (Math.min(marqueeStartX, marqueeCurrentX) - canvasOffsetX) / design.canvasScale;
+			const y1 = (Math.min(marqueeStartY, marqueeCurrentY) - canvasOffsetY) / design.canvasScale;
+			const x2 = (Math.max(marqueeStartX, marqueeCurrentX) - canvasOffsetX) / design.canvasScale;
+			const y2 = (Math.max(marqueeStartY, marqueeCurrentY) - canvasOffsetY) / design.canvasScale;
+
 			const ids = design.fields
 				.filter((f) => f.x + f.w > x1 && f.x < x2 && f.y + f.h > y1 && f.y < y2)
 				.map((f) => f.id);
@@ -321,6 +327,15 @@
 		activeGuides = [];
 	}
 
+	function onWheel(e: WheelEvent) {
+		e.preventDefault();
+		if (e.deltaY < 0) {
+			zoomIn();
+		} else {
+			zoomOut();
+		}
+	}
+
 	function onKeydown(e: KeyboardEvent) {
 		if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) {
 			return;
@@ -414,21 +429,21 @@
 		</Button>
 	</div>
 
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
-		class="flex flex-1 items-center justify-center overflow-auto"
+		bind:this={wrapperEl}
+		class="relative flex flex-1 items-center justify-center overflow-auto"
 		style="background: radial-gradient(circle, var(--border) 0.8px, transparent 0.8px); background-size: 24px 24px;"
-		onclick={(e) => { if (e.target === e.currentTarget) selectField(null); }}
+		onpointerdown={onWrapperPointerDown}
+		onpointermove={onWrapperPointerMove}
+		onpointerup={onWrapperPointerUp}
+		onwheel={onWheel}
 	>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			bind:this={canvasEl}
 			class="relative shrink-0 overflow-hidden bg-white shadow-[0_4px_32px_rgba(0,0,0,0.4)]"
 			style="width: {canvasW}px; height: {canvasH}px;"
-			onpointerdown={onCanvasPointerDown}
-			onpointermove={onCanvasPointerMove}
-			onpointerup={onCanvasPointerUp}
 		>
 			{#if settings.showGrid}
 				{@const gridSize = PPMM * 5 * design.canvasScale}
@@ -513,17 +528,18 @@
 				{/if}
 			{/each}
 
-			{#if marquee}
-				{@const mx = Math.min(marqueeStartX, marqueeCurrentX)}
-				{@const my = Math.min(marqueeStartY, marqueeCurrentY)}
-				{@const mw = Math.abs(marqueeCurrentX - marqueeStartX)}
-				{@const mh = Math.abs(marqueeCurrentY - marqueeStartY)}
-				<div
-					class="pointer-events-none absolute z-50 border border-ring bg-ring/10"
-					style="left: {mx}px; top: {my}px; width: {mw}px; height: {mh}px;"
-				></div>
-			{/if}
 		</div>
+
+		{#if marquee}
+			{@const mx = Math.min(marqueeStartX, marqueeCurrentX)}
+			{@const my = Math.min(marqueeStartY, marqueeCurrentY)}
+			{@const mw = Math.abs(marqueeCurrentX - marqueeStartX)}
+			{@const mh = Math.abs(marqueeCurrentY - marqueeStartY)}
+			<div
+				class="pointer-events-none absolute z-50 border border-ring bg-ring/10"
+				style="left: {mx}px; top: {my}px; width: {mw}px; height: {mh}px;"
+			></div>
+		{/if}
 	</div>
 
 	<Dialog.Root bind:open={dialogOpen}>
