@@ -30,6 +30,7 @@
     import { cn } from 'tailwind-variants';
 	import { computeSnap, computeSnapForResize, type SnapGuide } from '$lib/utils/snap';
 	import { getSettings } from '$lib/stores/settings.svelte';
+	import QRCode from 'qrcode';
 
 	let dialogOpen = $state(false);
 	let templateName = $state('');
@@ -109,6 +110,31 @@
 		}
 
 		return field.column ?? 'No data';
+	}
+
+	function getQrText(field: LabelField): string {
+		if (field.column && spreadsheet.data.length > 0) {
+			const row = spreadsheet.data[sampleRow] ?? spreadsheet.data[0];
+			return row[field.column] ?? '';
+		}
+		return field.text || '';
+	}
+
+	let qrCache = $state<Map<string, string>>(new Map());
+
+	function generateQr(text: string, size: number) {
+		const key = `${text}:${size}`;
+		if (qrCache.has(key)) return;
+		
+		qrCache.set(key, '');
+		QRCode.toDataURL(text, {
+			width: Math.round(size),
+			margin: 0,
+			errorCorrectionLevel: 'M',
+			color: { dark: '#000000', light: '#ffffff' }
+		}).then((url) => {
+			qrCache = new Map(qrCache).set(key, url);
+		});
 	}
 
 	function onWrapperPointerDown(e: PointerEvent) {
@@ -481,10 +507,20 @@
 					onpointerup={onFieldPointerUp}
 				>
 					{#if field.type === 'qr'}
-						<div
-							class="flex size-full flex-col items-center justify-center border border-border"
-							style="background: repeating-conic-gradient(var(--muted) 0% 25%, white 0% 50%) 50% / 8px 8px;"
-						></div>
+						{@const qrText = getQrText(field)}
+						{@const qrSize = Math.round(Math.min(field.w, field.h) * design.canvasScale)}
+						{@const qrKey = `${qrText}:${qrSize}`}
+						{@const qrUrl = qrText ? (generateQr(qrText, qrSize), qrCache.get(qrKey)) : ''}
+						{#if qrUrl}
+							<img src={qrUrl} alt="QR" class="size-full object-contain" draggable="false" />
+						{:else}
+							<div
+								class="flex size-full flex-col items-center justify-center border border-border text-muted-foreground text-[10px]"
+								style="background: repeating-conic-gradient(var(--muted) 0% 25%, white 0% 50%) 50% / 8px 8px;"
+							>
+								{#if !qrText}No data{/if}
+							</div>
+						{/if}
 					{:else}
 						<div
 							class="size-full overflow-hidden"
