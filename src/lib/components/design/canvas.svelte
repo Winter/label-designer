@@ -5,6 +5,8 @@
 		getDesign,
 		PPMM,
 		selectField,
+		toggleFieldSelection,
+		selectFieldIds,
 		updateField,
 		deleteSelected,
 		zoomIn,
@@ -67,6 +69,7 @@
 	let dragStartY = 0;
 	let dragFieldStartX = 0;
 	let dragFieldStartY = 0;
+	let dragGroupStarts: Map<string, { x: number; y: number }> = new Map();
 
 	let resizing = false;
 	let resizeFieldId = '';
@@ -76,6 +79,13 @@
 	let resizeFieldStartH = 0;
 
 	let activeGuides: SnapGuide[] = $state([]);
+
+	let marquee = $state(false);
+	let marqueeStartX = $state(0);
+	let marqueeStartY = $state(0);
+	let marqueeCurrentX = $state(0);
+	let marqueeCurrentY = $state(0);
+	let canvasEl: HTMLDivElement;
 
 	let sampleRow = $state(0);
 
@@ -100,8 +110,45 @@
 		return field.column ?? 'No data';
 	}
 
-	function onCanvasClick(e: MouseEvent) {
-		if (e.target === e.currentTarget) {
+	function onCanvasPointerDown(e: PointerEvent) {
+		if (e.target !== e.currentTarget) return;
+		e.preventDefault();
+
+		const rect = canvasEl.getBoundingClientRect();
+		marqueeStartX = e.clientX - rect.left;
+		marqueeStartY = e.clientY - rect.top;
+		marqueeCurrentX = marqueeStartX;
+		marqueeCurrentY = marqueeStartY;
+		marquee = true;
+
+		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+	}
+
+	function onCanvasPointerMove(e: PointerEvent) {
+		if (!marquee) return;
+
+		const rect = canvasEl.getBoundingClientRect();
+		marqueeCurrentX = Math.max(0, Math.min(canvasW, e.clientX - rect.left));
+		marqueeCurrentY = Math.max(0, Math.min(canvasH, e.clientY - rect.top));
+	}
+
+	function onCanvasPointerUp() {
+		if (!marquee) return;
+		marquee = false;
+
+		const x1 = Math.min(marqueeStartX, marqueeCurrentX) / design.canvasScale;
+		const y1 = Math.min(marqueeStartY, marqueeCurrentY) / design.canvasScale;
+		const x2 = Math.max(marqueeStartX, marqueeCurrentX) / design.canvasScale;
+		const y2 = Math.max(marqueeStartY, marqueeCurrentY) / design.canvasScale;
+
+		const wasDrag = Math.abs(marqueeCurrentX - marqueeStartX) > 3 || Math.abs(marqueeCurrentY - marqueeStartY) > 3;
+
+		if (wasDrag) {
+			const ids = design.fields
+				.filter((f) => f.x + f.w > x1 && f.x < x2 && f.y + f.h > y1 && f.y < y2)
+				.map((f) => f.id);
+			selectFieldIds(ids);
+		} else {
 			selectField(null);
 		}
 	}
@@ -109,7 +156,12 @@
 	function onFieldPointerDown(e: PointerEvent, fieldId: string) {
 		e.preventDefault();
 		e.stopPropagation();
-		selectField(fieldId);
+
+		if (e.shiftKey) {
+			toggleFieldSelection(fieldId);
+		} else if (!design.selectedFieldIds.includes(fieldId)) {
+			selectField(fieldId);
+		}
 
 		const field = design.fields.find((f) => f.id === fieldId);
 		if (!field) {
@@ -123,6 +175,13 @@
 		dragFieldStartX = field.x;
 		dragFieldStartY = field.y;
 
+		// Store start positions of all selected fields for group drag
+		dragGroupStarts = new Map();
+		for (const id of design.selectedFieldIds) {
+			const f = design.fields.find((ff) => ff.id === id);
+			if (f) dragGroupStarts.set(id, { x: f.x, y: f.y });
+		}
+
 		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 	}
 
@@ -134,37 +193,63 @@
 		const dx = (e.clientX - dragStartX) / design.canvasScale;
 		const dy = (e.clientY - dragStartY) / design.canvasScale;
 
-		const field = design.fields.find((f) => f.id === dragFieldId);
-		if (!field) {
-			return;
-		}
-
 		const canvasDesignW = design.labelW * PPMM;
 		const canvasDesignH = design.labelH * PPMM;
-		const maxX = canvasDesignW - field.w;
-		const maxY = canvasDesignH - field.h;
 
-		const freeX = Math.max(0, Math.min(maxX, dragFieldStartX + dx));
-		const freeY = Math.max(0, Math.min(maxY, dragFieldStartY + dy));
+		// Compute the group bounding box at its proposed position
+		let groupX = Infinity, groupY = Infinity, groupR = -Infinity, groupB = -Infinity;
+		for (const [id, start] of dragGroupStarts) {
+			const f = design.fields.find((ff) => ff.id === id);
+			if (!f) continue;
+			const nx = start.x + dx;
+			const ny = start.y + dy;
+			groupX = Math.min(groupX, nx);
+			groupY = Math.min(groupY, ny);
+			groupR = Math.max(groupR, nx + f.w);
+			groupB = Math.max(groupB, ny + f.h);
+		}
+
+		// Clamp the group bounding box within the canvas
+		let clampDx = dx;
+		let clampDy = dy;
+		if (groupX < 0) clampDx = dx - groupX;
+		else if (groupR > canvasDesignW) clampDx = dx - (groupR - canvasDesignW);
+		if (groupY < 0) clampDy = dy - groupY;
+		else if (groupB > canvasDesignH) clampDy = dy - (groupB - canvasDesignH);
+
+		// Recompute the clamped group bounding box for snap
+		groupX = Infinity; groupY = Infinity; groupR = -Infinity; groupB = -Infinity;
+		for (const [id, start] of dragGroupStarts) {
+			const f = design.fields.find((ff) => ff.id === id);
+			if (!f) continue;
+			groupX = Math.min(groupX, start.x + clampDx);
+			groupY = Math.min(groupY, start.y + clampDy);
+			groupR = Math.max(groupR, start.x + clampDx + f.w);
+			groupB = Math.max(groupB, start.y + clampDy + f.h);
+		}
+
+		let snapDx = 0;
+		let snapDy = 0;
 
 		if (settings.smartGuides) {
-			const otherFields = design.fields.filter((f) => f.id !== dragFieldId);
-			const snap = computeSnap(
-				{ x: freeX, y: freeY, w: field.w, h: field.h },
-				otherFields,
-				canvasDesignW,
-				canvasDesignH
-			);
+			const selectedIds = design.selectedFieldIds;
+			const otherFields = design.fields.filter((f) => !selectedIds.includes(f.id));
+			const groupBox = { x: groupX, y: groupY, w: groupR - groupX, h: groupB - groupY };
+			const snap = computeSnap(groupBox, otherFields, canvasDesignW, canvasDesignH);
 
-			updateField(dragFieldId, {
-				x: Math.max(0, Math.min(maxX, snap.x)),
-				y: Math.max(0, Math.min(maxY, snap.y))
-			});
-
+			snapDx = snap.x - groupBox.x;
+			snapDy = snap.y - groupBox.y;
 			activeGuides = snap.guides;
 		} else {
-			updateField(dragFieldId, { x: freeX, y: freeY });
 			activeGuides = [];
+		}
+
+		// Apply clamped delta + snap offset to all selected fields
+		for (const [id, start] of dragGroupStarts) {
+			updateField(id, {
+				x: start.x + clampDx + snapDx,
+				y: start.y + clampDy + snapDy
+			});
 		}
 	}
 
@@ -241,7 +326,7 @@
 			return;
 		}
 
-		if ((e.key === 'Delete' || e.key === 'Backspace') && design.selectedFieldId) {
+		if ((e.key === 'Delete' || e.key === 'Backspace') && design.selectedFieldIds.length > 0) {
 			e.preventDefault();
 			deleteSelected();
 		}
@@ -278,7 +363,7 @@
 			variant="ghost"
 			size="sm"
 			class="h-7 px-2 text-xs"
-			disabled={!design.selectedFieldId}
+			disabled={design.selectedFieldIds.length === 0}
 			onclick={deleteSelected}
 		>
 			<Trash2 class="mr-1 size-3.5" />
@@ -334,13 +419,16 @@
 	<div
 		class="flex flex-1 items-center justify-center overflow-auto"
 		style="background: radial-gradient(circle, var(--border) 0.8px, transparent 0.8px); background-size: 24px 24px;"
-		onclick={onCanvasClick}
+		onclick={(e) => { if (e.target === e.currentTarget) selectField(null); }}
 	>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
+			bind:this={canvasEl}
 			class="relative shrink-0 overflow-hidden bg-white shadow-[0_4px_32px_rgba(0,0,0,0.4)]"
 			style="width: {canvasW}px; height: {canvasH}px;"
-			onclick={onCanvasClick}
+			onpointerdown={onCanvasPointerDown}
+			onpointermove={onCanvasPointerMove}
+			onpointerup={onCanvasPointerUp}
 		>
 			{#if settings.showGrid}
 				{@const gridSize = PPMM * 5 * design.canvasScale}
@@ -359,7 +447,7 @@
 			{/if}
 
 			{#each design.fields as field (field.id)}
-				{@const isSelected = field.id === design.selectedFieldId}
+				{@const isSelected = design.selectedFieldIds.includes(field.id)}
 
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
@@ -424,6 +512,17 @@
 					></div>
 				{/if}
 			{/each}
+
+			{#if marquee}
+				{@const mx = Math.min(marqueeStartX, marqueeCurrentX)}
+				{@const my = Math.min(marqueeStartY, marqueeCurrentY)}
+				{@const mw = Math.abs(marqueeCurrentX - marqueeStartX)}
+				{@const mh = Math.abs(marqueeCurrentY - marqueeStartY)}
+				<div
+					class="pointer-events-none absolute z-50 border border-ring bg-ring/10"
+					style="left: {mx}px; top: {my}px; width: {mw}px; height: {mh}px;"
+				></div>
+			{/if}
 		</div>
 	</div>
 

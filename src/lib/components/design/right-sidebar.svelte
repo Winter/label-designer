@@ -37,7 +37,15 @@
 </script>
 
 <aside class="flex w-65 shrink-0 flex-col overflow-y-auto border-l border-border bg-card">
-	{#if !field}
+	{#if design.selectedFieldIds.length > 1}
+		<div class="flex flex-col items-center gap-3 px-5 py-10 text-center text-[13px]">
+			<span class="text-muted-foreground">{design.selectedFieldIds.length} fields selected</span>
+			<Button variant="destructive" size="sm" class="w-full" onclick={deleteSelected}>
+				<Trash2 class="mr-1.5 size-3.5" />
+				Delete All
+			</Button>
+		</div>
+	{:else if !field}
 		<div class="text-muted-foreground px-5 py-10 text-center text-[13px] leading-relaxed">
 			Select an element on the label to edit its properties, or add one from the left sidebar.
 		</div>

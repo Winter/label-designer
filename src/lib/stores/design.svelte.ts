@@ -68,7 +68,7 @@ interface DesignState {
 	labelHg: number;
 	labelVg: number;
 	fields: LabelField[];
-	selectedFieldId: string | null;
+	selectedFieldIds: string[];
 	canvasScale: number;
 }
 
@@ -90,7 +90,7 @@ const design = $state<DesignState>({
 	labelVg: defaultLabel.vg,
 
 	fields: [],
-	selectedFieldId: null,
+	selectedFieldIds: [],
 
 	canvasScale: DEFAULT_SCALE
 });
@@ -205,30 +205,39 @@ export function addField(type: FieldType, column: string | null = null): LabelFi
 	}
 
 	design.fields = [...design.fields, field];
-	design.selectedFieldId = id;
+	design.selectedFieldIds = [id];
 	return field;
 }
 
 export function selectField(id: string | null) {
-	design.selectedFieldId = id;
+	design.selectedFieldIds = id ? [id] : [];
+}
+
+export function toggleFieldSelection(id: string) {
+	if (design.selectedFieldIds.includes(id)) {
+		design.selectedFieldIds = design.selectedFieldIds.filter((fid) => fid !== id);
+	} else {
+		design.selectedFieldIds = [...design.selectedFieldIds, id];
+	}
+}
+
+export function selectFieldIds(ids: string[]) {
+	design.selectedFieldIds = ids;
 }
 
 export function getSelectedField(): LabelField | null {
-	if (!design.selectedFieldId) return null;
-	return design.fields.find((f) => f.id === design.selectedFieldId) ?? null;
+	if (design.selectedFieldIds.length !== 1) return null;
+	return design.fields.find((f) => f.id === design.selectedFieldIds[0]) ?? null;
 }
 
 export function deleteField(id: string) {
-	if (design.selectedFieldId === id) {
-		design.selectedFieldId = null;
-	}
+	design.selectedFieldIds = design.selectedFieldIds.filter((fid) => fid !== id);
 	design.fields = design.fields.filter((f) => f.id !== id);
 }
 
 export function deleteSelected() {
-	if (design.selectedFieldId) {
-		deleteField(design.selectedFieldId);
-	}
+	design.fields = design.fields.filter((f) => !design.selectedFieldIds.includes(f.id));
+	design.selectedFieldIds = [];
 }
 
 export function updateField(id: string, updates: Partial<LabelField>) {
